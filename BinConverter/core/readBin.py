@@ -5,6 +5,51 @@ import mmap
 import numpy.distutils.system_info as sysinfo
 
 
+def get_refs(set_filename):
+    """in the .set files there are 8 base reference channels indicated by ref_X Y, where 
+    X is the reference index and Y is the channel assigned."""
+    ch_ref_idxs = []
+    base_refs = []
+    ch_refs = []
+    alph = ["a", "b", "c", "d"]
+    ch_ref_idx_str = 'b_in_ch_'
+    ref_str = "ref_"
+
+    with open(set_filename, encoding='cp1252') as f:
+        for line in f:
+
+            # b_in_ch_X Y, where x is the channel number, and Y is the ref
+            if ch_ref_idx_str in line:
+                ch_str, ch_ref_idx = line.split(' ')
+                ch_ref_idxs.append(ch_ref_idx.rstrip())
+
+            # ref_X Y, where x is the ref index, and Y is the assigned channel number
+            if ref_str in line:
+                ref_idx, ref = line.split(' ')
+                ref_alph = str((int(ref)//4)+1) + str(alph[int(ref) % 4])
+                base_refs.append(ref_alph)
+
+        for ch in ch_ref_idxs:
+            ch_refs.append(base_refs[int(ch)])
+
+    return ch_refs
+
+
+def get_gains(set_filename):
+    ch_gains = []
+    ch_gains_str = 'gain_ch_'
+
+    with open(set_filename, encoding='cp1252') as f:
+        for line in f:
+
+            # gain_ch_X Y, where x is the channel number, and Y is the gain
+            if ch_gains_str in line:
+                ch_str, ch_gain = line.split(' ')
+                ch_gains.append(int(ch_gain))
+
+    return ch_gains
+
+
 def get_active_tetrode(set_filename):
     """in the .set files it will say collectMask_X Y for each tetrode number to tell you if
     it is active or not. T1 = ch1-ch4, T2 = ch5-ch8, etc."""
@@ -76,7 +121,8 @@ def get_bin_data(bin_filename, channels=None, tetrode=None):
         with contextlib.closing(mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)) as m:
             num_iterations = int(len(m)/bytes_per_iteration)
 
-            data = np.ndarray((num_iterations,), (np.int16, (1,192)), m, 32, (bytes_per_iteration,)).reshape((-1, 1)).flatten()
+            data = np.ndarray((num_iterations,), (np.int16, (1, 192)),
+                              m, 32, (bytes_per_iteration,)).reshape((-1, 1)).flatten()
             data = samples_to_array(data, channels=channels.tolist())
 
     return data
@@ -95,7 +141,8 @@ def samples_to_array(A, channels=[]):
 
     sample_num = int(len(A) / 64)  # get the sample numbers
 
-    sample_array = np.zeros((len(channels), sample_num))  # creating a 64x3 array of zeros (64 channels, 3 samples)
+    # creating a 64x3 array of zeros (64 channels, 3 samples)
+    sample_array = np.zeros((len(channels), sample_num))
 
     for i, channel in enumerate(channels):
         sample_array[i, :] = A[get_sample_indices(channel, sample_num)]
@@ -107,7 +154,8 @@ def get_sample_indices(channel_number, samples):
     remap_channel = get_remap_chan(channel_number)
 
     indices_scalar = np.multiply(np.arange(samples), 64)
-    sample_indices = indices_scalar + np.multiply(np.ones(samples), remap_channel)
+    sample_indices = indices_scalar + \
+        np.multiply(np.ones(samples), remap_channel)
 
     # return np.array([remap_channel, 64 + remap_channel, 64*2 + remap_channel])
     return (indices_scalar + np.multiply(np.ones(samples), remap_channel)).astype(int)
@@ -129,7 +177,8 @@ def get_remap_chan(chan_num):
 def get_channel_from_tetrode(tetrode):
     """This function will take the tetrode number and return the Axona channel numbers
     i.e. Tetrode 1 = Ch1 -Ch4, Tetrode 2 = Ch5-Ch8, etc"""
-    tetrode = int(tetrode)  # just in case the user gave a string as the tetrode
+    tetrode = int(
+        tetrode)  # just in case the user gave a string as the tetrode
 
     return np.arange(1, 5) + 4 * (tetrode - 1)
 
@@ -191,11 +240,14 @@ def get_raw_pos(bin_filename, mode='mmap'):
             with contextlib.closing(mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)) as m:
                 num_iterations = int(len(m) / bytes_per_iteration)
 
-                byte_ids = np.ndarray((num_iterations,), 'S4', m, 0, bytes_per_iteration)
+                byte_ids = np.ndarray(
+                    (num_iterations,), 'S4', m, 0, bytes_per_iteration)
 
-                pos_bool = np.where(byte_ids == b'ADU2')  # valid position packets have an ADU2 header b'ADU2' in bytes
+                # valid position packets have an ADU2 header b'ADU2' in bytes
+                pos_bool = np.where(byte_ids == b'ADU2')
 
-                valid_iterations = np.arange(len(byte_ids))[pos_bool]  # getting the packet number
+                valid_iterations = np.arange(len(byte_ids))[
+                    pos_bool]  # getting the packet number
 
                 # timestamp starts at the 12th bit from the start
                 time_stamp = np.ndarray((num_iterations,), np.int32, m, 12, bytes_per_iteration)[pos_bool].reshape(
@@ -220,15 +272,17 @@ def get_raw_pos(bin_filename, mode='mmap'):
 
                 byte_ids = np.ndarray((num_iterations,), 'S4', data, 0, 432)
 
-                pos_bool = np.where(byte_ids == b'ADU2')  # valid position packets have an ADU2 header b'ADU2' in bytes
+                # valid position packets have an ADU2 header b'ADU2' in bytes
+                pos_bool = np.where(byte_ids == b'ADU2')
 
-                valid_iterations = np.arange(len(byte_ids))[pos_bool]  # getting the packet number
+                valid_iterations = np.arange(len(byte_ids))[
+                    pos_bool]  # getting the packet number
 
                 time_stamp = np.ndarray((num_iterations,), np.uint32, data, 12, 432)[pos_bool].reshape(
                     (-1, 1))  # gettinge the time stamp data
 
                 positions = np.ndarray((num_iterations,), (np.uint16, (1, 8)), data, 16, (432,)).reshape((-1, 8))[
-                                pos_bool][:]
+                    pos_bool][:]
 
                 i = np.add(valid_iterations,
                            iteration_start)  # offsetting the samples depending on the chunk number (n)
