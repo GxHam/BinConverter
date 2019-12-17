@@ -1,6 +1,7 @@
 import sys, os
 from PyQt5 import QtWidgets, QtGui, QtCore
 import time
+import numpy as np
 
 
 _author_ = "Geoffrey Barrett"  # defines myself as the author
@@ -119,4 +120,12 @@ def find_consec(data):
             if index == len(data) - 1:
                 consecutive_values.append(current_consecutive)
     return consecutive_values
+
+def tresh_to_int8(thresh, adc_fmv, gain):
+    value = int(thresh / 256)
+    if value > 127:
+        value = 127
+    elif value < -128:
+        value = -128
+    return (value * adc_fmv * 1000.0) / (gain * 128.0)
 

@@ -50,6 +50,18 @@ def get_gains(set_filename):
     return ch_gains
 
 
+def get_adc_fullscale_mv(set_filename):
+    with open(set_filename, encoding='cp1252') as f:
+        for line in f:
+
+            # gain_ch_X Y, where x is the channel number, and Y is the gain
+            if "ADC_fullscale_mv" in line:
+                _, adc_fmv = line.split(' ')
+                adc_fmv = int(adc_fmv)
+
+    return adc_fmv
+
+
 def get_active_tetrode(set_filename):
     """in the .set files it will say collectMask_X Y for each tetrode number to tell you if
     it is active or not. T1 = ch1-ch4, T2 = ch5-ch8, etc."""

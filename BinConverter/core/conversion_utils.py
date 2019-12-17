@@ -26,7 +26,7 @@ def is_egf_active(set_filename):
 
         return False
 
-
+# Check here for conversion rules
 def is_converted(set_filename):
     """This method will check if the file has been converted already"""
 
@@ -76,7 +76,9 @@ def is_converted(set_filename):
             elif not os.path.exists(os.path.join(set_directory, '%s.egf%d' % (set_basename, int(egf)))):
                 all_egf_written = False
                 break
-
+    
+    all_eeg_written = True
+    all_egf_written = True
     return all_tetrodes_written and all_eeg_written and all_egf_written and pos_written
 
 

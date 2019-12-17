@@ -3,10 +3,11 @@ from PyQt5 import QtWidgets
 import numpy as np
 from BatchTINTV3.core.klusta_functions import klusta
 from .Tint_Matlab import int16toint8, get_setfile_parameter
-from .readBin import get_bin_data, get_raw_pos, get_channel_from_tetrode, get_active_tetrode, get_active_eeg, get_gains, get_refs
+from .readBin import get_bin_data, get_raw_pos, get_channel_from_tetrode, get_active_tetrode, get_active_eeg, get_gains, get_refs, get_adc_fullscale_mv
 from .CreatePos import create_pos
 from .ConvertTetrode import write_tetrode
 from .CreateEEG import create_eeg, create_egf
+from .utils import tresh_to_int8
 
 
 def convert_basename(self, set_filename, threshold):
@@ -101,7 +102,9 @@ def convert_basename(self, set_filename, threshold):
         "Tetrode", "Channel", "Gain", "Ref", "Thresh ?", "Thresh uV"))
     self.LogAppend.myGUI_signal.emit((
         "Saving thresholds to {}".format(text_filename1)))
-
+    adc_fmv = get_adc_fullscale_mv(set_filename)
+    ch_gains = get_gains(set_filename)
+    ch_refs = get_refs(set_filename)
     for tetrode in active_tetrodes:
 
         tetrode = int(tetrode)
@@ -147,8 +150,6 @@ def convert_basename(self, set_filename, threshold):
             # data = int16toint8(data)  # converting the data into int8
 
             tetrode_thresholds = []
-            ch_gains = get_gains(set_filename)
-            ch_refs = get_refs(set_filename)
 
             for channel_index, channel in enumerate(tetrode_channels):
                 k += 1
@@ -169,10 +170,10 @@ def convert_basename(self, set_filename, threshold):
                 # threshold = sigma_n / channel_max
                 # threshold = standard_deviations * sigma_n
                 tetrode_thresholds.append(standard_deviations * sigma_n)
-                # scaler_val = scale[tet_idx * 4 + channel_index]
-                # bit8_thresh = int16toint8(np.array([tetrode_thresholds[-1]]))
-                out_str1 = "{},{},{},{},{:.5f},{:3f}\n".format(
-                    tetrode, channel, ch_gains[channel-1], ch_refs[channel-1], tetrode_thresholds[-1], tetrode_thresholds[-1])
+                scaled_tresh = tresh_to_int8(
+                    tetrode_thresholds[-1], adc_fmv, ch_gains[channel-1])
+                out_str1 = "{},{},{},{},{:.3f},{:.5f}\n".format(
+                    tetrode, channel, ch_gains[channel-1], ch_refs[channel-1], tetrode_thresholds[-1], scaled_tresh)
                 f_txt1.write(out_str1)
 
             # threshold = int(17152)
