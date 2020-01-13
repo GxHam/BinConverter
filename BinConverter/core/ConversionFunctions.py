@@ -98,8 +98,8 @@ def convert_basename(self, set_filename, threshold):
         text_filename1 = os.path.join(
             os.path.dirname(set_filename), "dummy.csv")
     f_txt1 = open(text_filename1, "w")
-    f_txt1.write("{},{},{},{},{},{}\n".format(
-        "Tetrode", "Channel", "Gain", "Ref", "Thresh ?", "Thresh uV"))
+    f_txt1.write("{},{},{},{},{},{},{}\n".format(
+        " ","Tetrode", "Channel", "Gain", "Ref", "Thresh ?", "Thresh uV"))
     self.LogAppend.myGUI_signal.emit((
         "Saving thresholds to {}".format(text_filename1)))
     adc_fmv = get_adc_fullscale_mv(set_filename)
@@ -172,8 +172,8 @@ def convert_basename(self, set_filename, threshold):
                 tetrode_thresholds.append(standard_deviations * sigma_n)
                 scaled_tresh = tresh_to_int8(
                     tetrode_thresholds[-1], adc_fmv, ch_gains[channel-1])
-                out_str1 = "{},{},{},{},{:.3f},{:.5f}\n".format(
-                    tetrode, channel, ch_gains[channel-1], ch_refs[channel-1], tetrode_thresholds[-1], scaled_tresh)
+                out_str1 = "{},{},{},{},{},{:.3f},{:.5f}\n".format(
+                    " ",tetrode, channel, ch_gains[channel-1], ch_refs[channel-1], tetrode_thresholds[-1], scaled_tresh)
                 f_txt1.write(out_str1)
 
             # threshold = int(17152)
@@ -181,6 +181,7 @@ def convert_basename(self, set_filename, threshold):
             # tetrode_thresholds = [threshold, threshold, threshold, threshold]
 
             valid_spikes = get_spikes(data, tetrode_thresholds)
+            f_txt1.write("Spikes T{}, {}\n".format(tetrode, len(valid_spikes)))
 
             self.LogAppend.myGUI_signal.emit(
                 '[%s %s]: Number of spikes found: %d!' %
